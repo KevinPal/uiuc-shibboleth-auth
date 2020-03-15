@@ -6,4 +6,4 @@ How it works TL;DR:
 - We then redirect them to discord OAuth to get their discord account
 - Discord bot gives them a student/TA role depending on if they appear in the class roster
 
-This project was forked from an existing shibboleth authenticator for SIGPwny.
+This project was forked from an [existing shibboleth authenticator for SIGPwny](https://github.com/sigpwny/sigpwny-shibboleth-auth), all credit to [arxenix](https://github.com/arxenix).
