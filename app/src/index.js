@@ -12,8 +12,8 @@ const { catchAsync } = require("./utils");
 const Discord = require("discord.js");
 const client = new Discord.Client();
 client.login(config.DISCORD_BOT_TOKEN);
-const ta_netids = config.TA_NETIDS;
-const student_netids = config.STUDENT_NETIDS;
+const taNetIDs = config.TA_NETIDS;
+const studentNetIDs = config.STUDENT_NETIDS;
 
 // TODO - save authorized users to a db?
 
@@ -28,7 +28,6 @@ client.on("ready", () => {
 
 
 const redirect = encodeURI("https://shib.sigpwny.com/callback/discord");
-//const redirect = encodeURI("http://127.0.0.1:8080/callback/discord");
 const shibMap = {};
 
 server.get("/login", (req, res, next) => {
@@ -97,50 +96,38 @@ server.get("/callback/discord", catchAsync(async (req, res, next) => {
         return next();
     }
     
-    if (student_netids.includes(shibInfo.netid)) {
-        const student_role = guild.roles.find(role => role.name === 'Student');
+    // check for netid in student/TA roster
+    if (studentNetIDs.includes(shibInfo.netid)) {
+        const studentRole = guild.roles.find(role => role.name === 'Student');
         member.addRole(student_role);
 	member.setNickname(shibInfo.netid);
-        let message = `Discord Account <@${user.id}> authenticated as a student with NetID: ${shibInfo.netid}`;        
+        let message = `Discord account <@${user.id}> authenticated as a student with NetID: ${shibInfo.netid}`;        
         logChannel.send(message);        
         res.send(200, "Successfully joined as a student!")
-    } else if (ta_netids.includes(shibInfo.netid)) {
-        const ta_role = guild.roles.find(role => role.name === 'TA');
-        member.addRole(ta_role);
+    } else if (taNetIDs.includes(shibInfo.netid)) {
+        const taRole = guild.roles.find(role => role.name === 'TA');
+        member.addRole(taRole);
 	member.setNickname(shibInfo.netid);
-        let message = `Discord Account <@${user.id}> authenticated as a TA with NetID: ${shibInfo.netid}`;
+        let message = `Discord account <@${user.id}> authenticated as a TA with NetID: ${shibInfo.netid}`;
         logChannel.send(message);       
         res.send(200, "Successfully joined as a TA!")
     } else {
-        let message = `Discord Account <@${user.id}> failed to authenticate with NetID: ${shibInfo.netid}`;
+        let message = `Discord account <@${user.id}> failed to authenticate with NetID: ${shibInfo.netid}`;
         logChannel.send(message);
-        res.send(400, "You aren't a student/TA in ECE 391. DENIED nerd");
+        res.send(400, `${shibInfo.netid} is not in the students/TAs file. This incident will be reported.`);
     }
-    // const uiucRole = guild.roles.find(role => role.name === 'uiuc');
-    // member.addRole(uiucRole);
-    // assign alum role if they are an alum
-    // if (shibInfo.affiliation && shibInfo.affiliation.includes('alum')) {
-    //     const alumRole = guild.roles.find(role => role.name === 'alum');
-    //     member.addRole(alumRole);
-    // }
-    // const message = `Discord Account <@${user.id}>,${shibInfo.netid},${shibInfo.affiliation}`;
-    // fs.appendFileSync("discord.csv", `${message}\n`);    
-    // res.send(200, "Success!")
 }));
 
 server.get("/", (req, res, next) => {
     const body = `
     <html>
     <body>
-    <p>Authenticate and Sign up for the ECE 391 discord</p>
+    <p>Authenticate and sign up for the ECE 391 discord</p>
     <p>Information collected: NetID, Discord ID, University Affiliation</p>
     <p>By signing in, you agree to following the univerisity's rules/code of conduct.</p>
-    <ul>
-    <li>Don't do anything stupid.</li>
-    </ul>
     <h1><a href="./login">I AGREE</a></h1>
     <p><small>note: if you were not already signed into discord web, you might have to try again</small></p>
-    <p><small><a href="https://github.com/arxenix/uiuc-shibboleth-auth">Open Source</a></small></p>
+    <p><small><a href="https://github.com/jjwang11/uiuc-shibboleth-auth">Open Source</a></small></p>
     </body>
     </html>
     `;
