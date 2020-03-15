@@ -12,15 +12,17 @@ const { catchAsync } = require("./utils");
 const Discord = require("discord.js");
 const client = new Discord.Client();
 client.login(config.DISCORD_BOT_TOKEN);
+const ta_netids = config.TA_NETIDS;
+const student_netids = config.STUDENT_NETIDS;
 
 // TODO - save authorized users to a db?
 
 let guild = null;
 let logChannel = null;
-const LOGGING_CHANNEL_ID = "537700054677323779";
-const SIGPWNY_GUILD_ID   = "485104508175646751";
+const LOGGING_CHANNEL_ID = "687474608592650253";
+const ECE391_GUILD_ID   = "687467865078628375";
 client.on("ready", () => {
-    guild = client.guilds.get(SIGPWNY_GUILD_ID);
+    guild = client.guilds.get(ECE391_GUILD_ID);
     logChannel = guild.channels.get(LOGGING_CHANNEL_ID);
 });
 
@@ -90,33 +92,53 @@ server.get("/callback/discord", catchAsync(async (req, res, next) => {
     console.log(userJson);
     const user = client.users.get(userJson.id);
     const member = guild.member(user);
-    const uiucRole = guild.roles.find(role => role.name === 'uiuc');
-    member.addRole(uiucRole);
-    // assign alum role if they are an alum
-    if (shibInfo.affiliation && shibInfo.affiliation.includes('alum')) {
-        const alumRole = guild.roles.find(role => role.name === 'alum');
-        member.addRole(alumRole);
+    if (!member) {        
+        res.send(400, "Could not find user in channel - did you join the server yet?");
+        return next();
     }
-    const message = `<@${user.id}>,${shibInfo.netid},${shibInfo.affiliation}`;
-    logChannel.send(message);
-    fs.appendFileSync("discord.csv", `${message}\n`);
-    res.send(200, "Success!")
+    
+    if (student_netids.includes(shibInfo.netid)) {
+        const student_role = guild.roles.find(role => role.name === 'Student');
+        member.addRole(student_role);
+	member.setNickname(shibInfo.netid);
+        let message = `Discord Account <@${user.id}> authenticated as a student with NetID: ${shibInfo.netid}`;        
+        logChannel.send(message);        
+        res.send(200, "Successfully joined as a student!")
+    } else if (ta_netids.includes(shibInfo.netid)) {
+        const ta_role = guild.roles.find(role => role.name === 'TA');
+        member.addRole(ta_role);
+	member.setNickname(shibInfo.netid);
+        let message = `Discord Account <@${user.id}> authenticated as a TA with NetID: ${shibInfo.netid}`;
+        logChannel.send(message);       
+        res.send(200, "Successfully joined as a TA!")
+    } else {
+        let message = `Discord Account <@${user.id}> failed to authenticate with NetID: ${shibInfo.netid}`;
+        logChannel.send(message);
+        res.send(400, "You aren't a student/TA in ECE 391. DENIED nerd");
+    }
+    // const uiucRole = guild.roles.find(role => role.name === 'uiuc');
+    // member.addRole(uiucRole);
+    // assign alum role if they are an alum
+    // if (shibInfo.affiliation && shibInfo.affiliation.includes('alum')) {
+    //     const alumRole = guild.roles.find(role => role.name === 'alum');
+    //     member.addRole(alumRole);
+    // }
+    // const message = `Discord Account <@${user.id}>,${shibInfo.netid},${shibInfo.affiliation}`;
+    // fs.appendFileSync("discord.csv", `${message}\n`);    
+    // res.send(200, "Success!")
 }));
 
 server.get("/", (req, res, next) => {
     const body = `
     <html>
     <body>
-    <p>Authenticate and Sign up for the SIGPwny discord</p>
+    <p>Authenticate and Sign up for the ECE 391 discord</p>
     <p>Information collected: NetID, Discord ID, University Affiliation</p>
-    <p>SIGPwny cares a lot about being inclusive. By signing in, you agree to our rules/code of conduct.</p>
+    <p>By signing in, you agree to following the univerisity's rules/code of conduct.</p>
     <ul>
-    <li>Be nice</li>
-    <li>Don&apos;t do anything illegal.</li>
-    <li>No racism/sexism/homophobia etc.</li>
-    <li>No NSFW.</li>
+    <li>Don't do anything stupid.</li>
     </ul>
-    <h1><a href="./login">Ok</a></h1>
+    <h1><a href="./login">I AGREE</a></h1>
     <p><small>note: if you were not already signed into discord web, you might have to try again</small></p>
     <p><small><a href="https://github.com/arxenix/uiuc-shibboleth-auth">Open Source</a></small></p>
     </body>
