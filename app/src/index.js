@@ -89,8 +89,8 @@ server.get("/callback/discord", catchAsync(async (req, res, next) => {
     });
     const userJson = await userResponse.json();
     console.log(userJson);
-    const user = client.users.get(userJson.id);
-    const member = guild.member(user);
+    const user = await client.users.get(userJson.id);
+    const member = await guild.member(user);
     if (!member) {        
         res.send(400, "Could not find user in channel - did you join the server yet?");
         return next();
@@ -99,21 +99,21 @@ server.get("/callback/discord", catchAsync(async (req, res, next) => {
     // check for netid in student/TA roster
     if (studentNetIDs.includes(shibInfo.netid)) {
         const studentRole = guild.roles.find(role => role.name === 'Student');
-        member.addRole(student_role);
-	member.setNickname(shibInfo.netid);
+        await member.addRole(studentRole);
+	await member.setNickname(shibInfo.netid);
         let message = `Discord account <@${user.id}> authenticated as a student with NetID: ${shibInfo.netid}`;        
-        logChannel.send(message);        
+        await logChannel.send(message);        
         res.send(200, "Successfully joined as a student!")
     } else if (taNetIDs.includes(shibInfo.netid)) {
         const taRole = guild.roles.find(role => role.name === 'TA');
-        member.addRole(taRole);
-	member.setNickname(shibInfo.netid);
+        await member.addRole(taRole);
+	await member.setNickname(shibInfo.netid);
         let message = `Discord account <@${user.id}> authenticated as a TA with NetID: ${shibInfo.netid}`;
-        logChannel.send(message);       
+        await logChannel.send(message);       
         res.send(200, "Successfully joined as a TA!")
     } else {
         let message = `Discord account <@${user.id}> failed to authenticate with NetID: ${shibInfo.netid}`;
-        logChannel.send(message);
+        await logChannel.send(message);
         res.send(400, `${shibInfo.netid} is not in the students/TAs file. This incident will be reported.`);
     }
 }));
